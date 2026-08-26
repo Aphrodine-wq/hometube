@@ -1,0 +1,7 @@
+/node_modules
+/dist
+/src-tauri/target
+/src-tauri/binaries/xytz-*
+!/src-tauri/binaries/README.md
+*.log
+.DS_Store

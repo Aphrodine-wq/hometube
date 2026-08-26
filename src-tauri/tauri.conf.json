@@ -1,0 +1,45 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "HomeTube",
+  "version": "0.1.0",
+  "identifier": "app.hometube.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "HomeTube",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 980,
+        "minHeight": 680,
+        "decorations": false,
+        "transparent": false,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data: blob: https://i.ytimg.com https://img.youtube.com https://yt3.ggpht.com; media-src 'self' asset: http://asset.localhost blob: http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src ipc: http://ipc.localhost",
+      "assetProtocol": {
+        "enable": true,
+        "scope": ["$VIDEO/**/*", "$APPLOCALDATA/**/*"]
+      }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["appimage"],
+    "icon": ["icons/hometube-icon-final.png"],
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": true
+      }
+    }
+  }
+}
