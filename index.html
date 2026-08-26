@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0c0d0f" />
     <title>HomeTube</title>
+    <script>
+      // Apply the saved appearance before first paint so a light-theme user
+      // never sees a dark flash. Mirrors src/lib/appearance.ts; the source of
+      // truth stays in SQLite and localStorage only caches it.
+      (function () {
+        try {
+          var stored = JSON.parse(localStorage.getItem("hometube:appearance:v1") || "null") || {};
+          var root = document.documentElement;
+          var theme = stored.themePreference === "dark" || stored.themePreference === "light" ? stored.themePreference : "system";
+          var resolved = theme === "system"
+            ? (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark")
+            : theme;
+          root.dataset.theme = resolved;
+          root.dataset.accent = typeof stored.accentPreference === "string" ? stored.accentPreference : "cinema";
+          root.dataset.density = typeof stored.densityPreference === "string" ? stored.densityPreference : "comfortable";
+          root.dataset.textSize = typeof stored.textSizePreference === "string" ? stored.textSizePreference : "standard";
+          root.dataset.reducedMotion = stored.reducedMotion === true ? "true" : "false";
+          root.style.colorScheme = resolved;
+          var meta = document.querySelector('meta[name="theme-color"]');
+          if (meta) meta.setAttribute("content", resolved === "light" ? "#f3f1ed" : "#0c0d0f");
+        } catch (error) {
+          /* first paint falls back to the dark default */
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

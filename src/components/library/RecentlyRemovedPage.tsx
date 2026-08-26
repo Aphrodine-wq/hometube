@@ -10,7 +10,7 @@ import { bridge } from "../../lib/bridge";
 import type { LegacyCandidate, RemovedItem } from "../../types";
 
 interface RecentlyRemovedPageProps {
-  onLibraryChanged: () => void;
+  onLibraryChanged: () => void | Promise<void>;
   onError: (error: string) => void;
 }
 

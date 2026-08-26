@@ -1,4 +1,10 @@
-import type { DownloadQuality } from "../types";
+import type {
+  AccentPreference,
+  AppearancePreferences,
+  DensityPreference,
+  DownloadQuality,
+  TextSizePreference,
+} from "../types";
 
 export type LibrarySort = "recent" | "title" | "creator" | "duration" | "size";
 export type ViewingFilter = "all" | "unwatched" | "watching" | "watched";
@@ -14,6 +20,9 @@ export interface LibraryViewPreferences {
 
 const LIBRARY_KEY = "hometube:library-view:v1";
 const DOWNLOAD_KEY = "hometube:download-quality:v1";
+// Mirror of the SQLite-persisted appearance settings, read by the inline
+// bootstrap script in index.html so first paint matches the saved theme.
+const APPEARANCE_KEY = "hometube:appearance:v1";
 
 export const DEFAULT_LIBRARY_VIEW: LibraryViewPreferences = {
   sort: "recent",
@@ -53,6 +62,39 @@ export function loadLibraryView(): LibraryViewPreferences {
 
 export function saveLibraryView(value: LibraryViewPreferences) {
   storage()?.setItem(LIBRARY_KEY, JSON.stringify(value));
+}
+
+const THEMES = new Set<AppearancePreferences["themePreference"]>(["system", "dark", "light"]);
+const ACCENTS = new Set<AccentPreference>(["cinema", "amber", "teal", "blue", "violet"]);
+const DENSITIES = new Set<DensityPreference>(["comfortable", "compact"]);
+const TEXT_SIZES = new Set<TextSizePreference>(["small", "standard", "large"]);
+
+export function loadAppearanceMirror(): AppearancePreferences | null {
+  try {
+    const parsed = JSON.parse(storage()?.getItem(APPEARANCE_KEY) || "null") as Partial<AppearancePreferences> | null;
+    if (
+      !parsed ||
+      !THEMES.has(parsed.themePreference as AppearancePreferences["themePreference"]) ||
+      !ACCENTS.has(parsed.accentPreference as AccentPreference) ||
+      !DENSITIES.has(parsed.densityPreference as DensityPreference) ||
+      !TEXT_SIZES.has(parsed.textSizePreference as TextSizePreference)
+    ) {
+      return null;
+    }
+    return {
+      themePreference: parsed.themePreference as AppearancePreferences["themePreference"],
+      accentPreference: parsed.accentPreference as AccentPreference,
+      densityPreference: parsed.densityPreference as DensityPreference,
+      textSizePreference: parsed.textSizePreference as TextSizePreference,
+      reducedMotion: parsed.reducedMotion === true,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function saveAppearanceMirror(value: AppearancePreferences) {
+  storage()?.setItem(APPEARANCE_KEY, JSON.stringify(value));
 }
 
 export function loadDownloadQuality(): DownloadQuality {

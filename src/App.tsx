@@ -4,7 +4,8 @@ import {
   WarningCircleIcon as AlertCircle,
 } from "@phosphor-icons/react";
 import { bridge } from "./lib/bridge";
-import { applyAppearance, appearanceFromSettings } from "./lib/appearance";
+import { applyAppearance, appearanceFromSettings, DEFAULT_APPEARANCE } from "./lib/appearance";
+import { loadAppearanceMirror } from "./lib/uiPreferences";
 import type { AppearancePreferences, AppSettings, BootstrapStatus, LibrarySnapshot, MediaItem, View } from "./types";
 import { EmptyLibrary } from "./components/EmptyLibrary";
 import { Hero } from "./components/Hero";
@@ -29,11 +30,10 @@ const EMPTY_BOOTSTRAP: BootstrapStatus = {
     ytDlpPath: "yt-dlp",
     jsRuntimePath: "node",
     conversionQuality: "balanced",
-    themePreference: "system",
-    accentPreference: "cinema",
-    densityPreference: "comfortable",
-    textSizePreference: "standard",
-    reducedMotion: false,
+    // Seed from the localStorage mirror so the pre-bootstrap render already
+    // matches the saved appearance instead of flashing the defaults.
+    ...DEFAULT_APPEARANCE,
+    ...(loadAppearanceMirror() ?? {}),
     libraryVolumeId: null,
   },
   storage: {
@@ -116,16 +116,27 @@ export default function App() {
     bootstrap.settings.reducedMotion,
   ]);
 
+  const cycleTheme = useCallback(() => {
+    const preferences = appearanceFromSettings(bootstrap.settings);
+    const order: AppSettings["themePreference"][] = ["system", "dark", "light"];
+    const next = order[(order.indexOf(preferences.themePreference) + 1) % order.length];
+    void saveAppearance({ ...preferences, themePreference: next }).catch(() => undefined);
+  }, [bootstrap.settings]);
+
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
         document.querySelector<HTMLInputElement>(".search-box input")?.focus();
       }
+      if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key.toLowerCase() === "d") {
+        event.preventDefault();
+        cycleTheme();
+      }
     };
     window.addEventListener("keydown", shortcut);
     return () => window.removeEventListener("keydown", shortcut);
-  }, []);
+  }, [cycleTheme]);
 
   const filtered = useMemo(() => library.media.filter((item) => matches(item, query)), [library.media, query]);
   const selected = useMemo(() => queue ? library.media.find((item) => item.id === queue.ids[queue.index]) || null : null, [library.media, queue]);
@@ -221,7 +232,7 @@ export default function App() {
     <div className="app-shell">
       <header className="app-header">
         <Sidebar active={view} onNavigate={(next) => { setView(next); setQuery(""); }} count={library.media.length} />
-        <Titlebar query={query} onQuery={setQuery} scanning={scanning} />
+        <Titlebar query={query} onQuery={setQuery} scanning={scanning} theme={bootstrap.settings.themePreference} onCycleTheme={cycleTheme} />
       </header>
       <div className="workspace">
         <main>{content()}</main>

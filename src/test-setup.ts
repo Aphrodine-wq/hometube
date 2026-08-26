@@ -1,4 +1,10 @@
 import "@testing-library/jest-dom/vitest";
+import { cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+
+// Auto-cleanup only registers itself when vitest globals are enabled; they
+// are not, so unmount rendered trees between tests here.
+afterEach(() => cleanup());
 
 const storage = new Map<string, string>();
 Object.defineProperty(window, "localStorage", {

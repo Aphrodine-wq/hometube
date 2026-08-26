@@ -21,6 +21,7 @@ export function SettingsPanel({ bootstrap, onSave, onAppearanceChange }: Setting
   const [settings, setSettings] = useState(bootstrap.settings);
   const [saving, setSaving] = useState(false);
   const [savingAppearance, setSavingAppearance] = useState(false);
+  const [appearanceError, setAppearanceError] = useState<string | null>(null);
   useEffect(() => setSettings(bootstrap.settings), [bootstrap.settings]);
 
   const chooseLibrary = async () => {
@@ -34,8 +35,11 @@ export function SettingsPanel({ bootstrap, onSave, onAppearanceChange }: Setting
   const changeAppearance = async (preferences: AppearancePreferences) => {
     setSettings((current) => ({ ...current, ...preferences }));
     setSavingAppearance(true);
+    setAppearanceError(null);
     try {
       setSettings(await onAppearanceChange(preferences));
+    } catch (error) {
+      setAppearanceError(String(error));
     } finally {
       setSavingAppearance(false);
     }
@@ -69,6 +73,7 @@ export function SettingsPanel({ bootstrap, onSave, onAppearanceChange }: Setting
             }}
             onChange={(preferences) => void changeAppearance(preferences)}
             saving={savingAppearance}
+            error={appearanceError}
           />
         </div>
         <div className="settings-card">
