@@ -89,6 +89,27 @@ export function SettingsPanel({ bootstrap, onSave, onAppearanceChange }: Setting
           </div>
         </div>
         <div className="settings-card">
+          <div className="settings-card-title"><div><h2>YouTube access</h2><p>Use your signed-in session when YouTube asks for verification.</p></div></div>
+          <label className="select-field">Cookie source<select
+            value={settings.youtubeCookiesBrowser ?? ""}
+            onChange={(event) => setSettings({ ...settings, youtubeCookiesBrowser: event.target.value || null })}
+          >
+            <option value="">No cookies</option>
+            {["firefox", "chrome", "chromium", "brave", "edge", "opera", "safari", "vivaldi", "whale", "librewolf"].map((browser) => (
+              <option key={browser} value={browser}>{browser[0].toUpperCase() + browser.slice(1)}</option>
+            ))}
+          </select></label>
+          <div className="path-picker">
+            <input
+              aria-label="Cookies file"
+              placeholder="…or point at an exported cookies.txt"
+              value={settings.youtubeCookiesFile ?? ""}
+              onChange={(event) => setSettings({ ...settings, youtubeCookiesFile: event.target.value })}
+            />
+          </div>
+          <p className="browser-note">Needed when downloads fail with “Sign in to confirm you’re not a bot”. Log into YouTube in the chosen browser, or export cookies.txt with a browser extension and paste its path here.</p>
+        </div>
+        <div className="settings-card">
           <div className="settings-card-title"><div><h2>Tool paths</h2><p>Override commands only when they are not on PATH.</p></div></div>
           <div className="form-grid">
             <label>FFmpeg<input value={settings.ffmpegPath} onChange={(event) => setSettings({ ...settings, ffmpegPath: event.target.value })} /></label>

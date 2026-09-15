@@ -18,6 +18,7 @@ import type {
   RemovalResult,
   RemovedItem,
   StorageStatus,
+  YoutubeSearchItem,
 } from "../types";
 
 const isTauri = "__TAURI_INTERNALS__" in window;
@@ -35,6 +36,8 @@ const browserSettings: AppSettings = {
   textSizePreference: "standard",
   reducedMotion: false,
   libraryVolumeId: null,
+  youtubeCookiesBrowser: null,
+  youtubeCookiesFile: null,
 };
 
 const browserStorage: StorageStatus = {
@@ -96,6 +99,9 @@ export const bridge = {
           durationSecs: null,
           sourceMaxHeight: 1080,
         });
+  },
+  youtubeSearch(query: string): Promise<YoutubeSearchItem[]> {
+    return isTauri ? invoke("search_youtube", { query }) : Promise.resolve([]);
   },
   cancelDownload(jobId: string): Promise<void> {
     return invoke("cancel_download", { jobId });

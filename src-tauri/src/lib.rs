@@ -8,6 +8,7 @@ mod migration;
 mod models;
 mod removal;
 mod scanner;
+mod search;
 mod storage;
 
 use crate::db::Database;
@@ -15,7 +16,7 @@ use crate::models::{
     AppSettings, AppearancePreferences, BootstrapStatus, BulkMediaResult, ConversionJob,
     DependencyStatus, DownloadJob, DownloadPreview, DownloadQueueSnapshot, DownloadRequest,
     LegacyCandidate, LibrarySnapshot, MediaOperationFailure, ProgressUpdate, RemovalPreview,
-    RemovalResult, RemovedItem, StorageStatus,
+    RemovalResult, RemovedItem, StorageStatus, YoutubeSearchItem,
 };
 use anyhow::{Context, Result};
 use notify::{RecommendedWatcher, RecursiveMode, Watcher};
@@ -278,7 +279,31 @@ async fn preview_download(
 ) -> Result<DownloadPreview, String> {
     let settings = state.settings.read().clone();
     tauri::async_runtime::spawn_blocking(move || {
-        downloads::preview_download(&settings.yt_dlp_path, &settings.js_runtime_path, &url)
+        downloads::preview_download(
+        &settings.yt_dlp_path,
+        &settings.js_runtime_path,
+        &url,
+        &settings.youtube_auth_args(),
+    )
+    })
+    .await
+    .map_err(err_string)?
+    .map_err(err_string)
+}
+
+#[tauri::command]
+async fn search_youtube(
+    state: State<'_, AppState>,
+    query: String,
+) -> Result<Vec<YoutubeSearchItem>, String> {
+    let settings = state.settings.read().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        search::search_youtube(
+            &settings.yt_dlp_path,
+            &settings.js_runtime_path,
+            &query,
+            &settings.youtube_auth_args(),
+        )
     })
     .await
     .map_err(err_string)?
@@ -808,6 +833,7 @@ fn save_settings(
     state: State<'_, AppState>,
     mut settings: AppSettings,
 ) -> Result<BootstrapStatus, String> {
+    settings = settings.normalized();
     validate_command_setting(&mut settings.ffmpeg_path, "FFmpeg")?;
     validate_command_setting(&mut settings.ffprobe_path, "FFprobe")?;
     validate_command_setting(&mut settings.yt_dlp_path, "yt-dlp")?;
@@ -825,6 +851,25 @@ fn save_settings(
         text_size_preference: settings.text_size_preference.clone(),
         reduced_motion: settings.reduced_motion,
     })?;
+    let unknown_browser = |browser: &str| {
+        !matches!(
+            browser,
+            "firefox" | "chrome" | "chromium" | "brave" | "edge" | "opera" | "safari" | "vivaldi" | "whale" | "librewolf"
+        )
+    };
+    if settings
+        .youtube_cookies_browser
+        .as_deref()
+        .map(unknown_browser)
+        .unwrap_or(false)
+    {
+        return Err("YouTube cookies browser must be one of: firefox, chrome, chromium, brave, edge, opera, safari, vivaldi, whale, librewolf".into());
+    }
+    if let Some(file) = settings.youtube_cookies_file.as_deref() {
+        if !Path::new(file).is_file() {
+            return Err("The YouTube cookies file does not exist".into());
+        }
+    }
     let library = config::validate_library(&settings.library_path).map_err(err_string)?;
     settings.library_path = library.to_string_lossy().into_owned();
     settings.library_volume_id = Some(storage::volume_id(&library).map_err(err_string)?);
@@ -1023,6 +1068,7 @@ pub fn run() {
             bulk_set_watched,
             save_progress,
             preview_download,
+            search_youtube,
             enqueue_download,
             get_download_queue,
             cancel_download,

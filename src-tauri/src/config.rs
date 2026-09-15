@@ -19,6 +19,8 @@ pub fn defaults() -> AppSettings {
         text_size_preference: "standard".into(),
         reduced_motion: false,
         library_volume_id: None,
+        youtube_cookies_browser: None,
+        youtube_cookies_file: None,
     }
 }
 

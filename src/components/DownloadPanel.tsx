@@ -3,10 +3,11 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useDownloadPreview } from "../hooks/useDownloadPreview";
 import { bridge } from "../lib/bridge";
 import { loadDownloadQuality, saveDownloadQuality } from "../lib/uiPreferences";
-import type { DownloadJob, DownloadQuality } from "../types";
+import type { DownloadJob, DownloadQuality, YoutubeSearchItem } from "../types";
 import { DownloadComposer } from "./downloads/DownloadComposer";
 import { DownloadPreviewCard } from "./downloads/DownloadPreviewCard";
 import { DownloadQueue } from "./downloads/DownloadQueue";
+import { YoutubeSearch } from "./downloads/YoutubeSearch";
 
 interface DownloadPanelProps {
   onOpenLibrary: () => void;
@@ -84,6 +85,15 @@ export default function DownloadPanel({ onOpenLibrary }: DownloadPanelProps) {
     }
   };
 
+  const downloadResult = async (item: YoutubeSearchItem) => {
+    try {
+      const job = await bridge.enqueueDownload({ url: item.url, quality });
+      setJobs((current) => [job, ...current.filter((entry) => entry.id !== job.id)]);
+    } catch (enqueueError) {
+      setError(String(enqueueError));
+    }
+  };
+
   return (
     <section className="discover-page download-page">
       <div className="page-heading discover-heading">
@@ -116,6 +126,11 @@ export default function DownloadPanel({ onOpenLibrary }: DownloadPanelProps) {
           <button onClick={() => setError(null)} aria-label="Dismiss error"><XIcon weight="bold" /></button>
         </div>
       ) : null}
+
+      <YoutubeSearch
+        queuedUrls={jobs.filter((job) => job.status !== "failed" && job.status !== "cancelled").map((job) => job.url)}
+        onDownload={downloadResult}
+      />
 
       <DownloadQueue
         jobs={jobs}

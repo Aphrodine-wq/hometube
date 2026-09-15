@@ -41,7 +41,6 @@ export function LibraryPage({
 
   const visible = useMemo(() => applyLibraryView(items, preferences), [items, preferences]);
   const selectedItems = useMemo(() => items.filter((item) => selected.has(item.id)), [items, selected]);
-  const selectedManaged = selectedItems.filter((item) => item.managedByHomeTube);
   const creators = useMemo(() => [...new Set(items.map((item) => item.creator))].sort(), [items]);
   const formats = useMemo(() => [...new Set(items.map((item) => item.container))].sort(), [items]);
   const managedCount = items.filter((item) => item.managedByHomeTube).length;
@@ -80,7 +79,7 @@ export function LibraryPage({
     try {
       const preview = mode === "all"
         ? await bridge.previewRemoveAllHomeTube()
-        : await bridge.previewRemoveMedia(item ? [item.id] : selectedManaged.map((entry) => entry.id));
+        : await bridge.previewRemoveMedia(item ? [item.id] : [...selected]);
       if (!preview.eligibleCount) {
         onError("No verified HomeTube downloads are eligible for this Trash action.");
         return;
@@ -149,7 +148,6 @@ export function LibraryPage({
 
       <BulkActionBar
         selectedCount={selected.size}
-        managedCount={selectedManaged.length}
         onFavorite={(value) => void bulk("favorite", value)}
         onWatched={(value) => void bulk("watched", value)}
         onRemove={() => void openRemoval("selected")}

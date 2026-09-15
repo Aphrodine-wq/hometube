@@ -1,11 +1,12 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { DownloadJob } from "../types";
+import type { DownloadJob, YoutubeSearchItem } from "../types";
 import DownloadPanel from "./DownloadPanel";
 
 const mocks = vi.hoisted(() => ({
   enqueue: vi.fn(),
   listen: vi.fn(),
+  youtubeSearch: vi.fn(),
 }));
 
 vi.mock("../lib/bridge", () => ({
@@ -19,9 +20,19 @@ vi.mock("../lib/bridge", () => ({
     cancelDownload: vi.fn().mockResolvedValue(undefined),
     retryDownload: vi.fn(),
     clearFinishedDownloads: vi.fn().mockResolvedValue(undefined),
+    youtubeSearch: mocks.youtubeSearch,
     listen: mocks.listen,
   },
 }));
+
+const searchHit: YoutubeSearchItem = {
+  videoId: "rFZHOHl-L8A",
+  url: "https://www.youtube.com/watch?v=rFZHOHl-L8A",
+  title: "lofi hip hop radio",
+  channel: "Lofi Girl",
+  durationSecs: null,
+  thumbnailUrl: null,
+};
 
 const queued: DownloadJob = {
   id: "job-one",
@@ -46,6 +57,7 @@ describe("DownloadPanel", () => {
   beforeEach(() => {
     mocks.enqueue.mockReset().mockResolvedValue(queued);
     mocks.listen.mockReset().mockResolvedValue(() => undefined);
+    mocks.youtubeSearch.mockReset().mockResolvedValue([searchHit]);
   });
 
   it("queues a YouTube playlist at the selected quality", async () => {
@@ -70,5 +82,19 @@ describe("DownloadPanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Download" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("youtube.com or youtu.be");
     expect(mocks.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("searches YouTube and queues a result at the selected quality", async () => {
+    render(<DownloadPanel onOpenLibrary={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText("Search YouTube"), { target: { value: "lofi radio" } });
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(await screen.findByText("lofi hip hop radio")).toBeInTheDocument();
+    expect(screen.getByText("Lofi Girl")).toBeInTheDocument();
+    expect(mocks.youtubeSearch).toHaveBeenCalledWith("lofi radio");
+    fireEvent.click(within(screen.getByRole("listitem")).getByRole("button", { name: "Download" }));
+    await waitFor(() => expect(mocks.enqueue).toHaveBeenCalledWith({
+      url: searchHit.url,
+      quality: "720p",
+    }));
   });
 });

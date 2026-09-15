@@ -35,6 +35,8 @@ const EMPTY_BOOTSTRAP: BootstrapStatus = {
     ...DEFAULT_APPEARANCE,
     ...(loadAppearanceMirror() ?? {}),
     libraryVolumeId: null,
+    youtubeCookiesBrowser: null,
+    youtubeCookiesFile: null,
   },
   storage: {
     path: "", available: false, totalBytes: 0, availableBytes: 0, usedBytes: 0,
@@ -231,8 +233,16 @@ export default function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <Sidebar active={view} onNavigate={(next) => { setView(next); setQuery(""); }} count={library.media.length} />
-        <Titlebar query={query} onQuery={setQuery} scanning={scanning} theme={bootstrap.settings.themePreference} onCycleTheme={cycleTheme} />
+        <Sidebar active={view} onNavigate={(next) => { setView(next); setQuery(""); }} />
+        <Titlebar
+          query={query}
+          onQuery={setQuery}
+          scanning={scanning}
+          theme={bootstrap.settings.themePreference}
+          onCycleTheme={cycleTheme}
+          activeView={view}
+          onNavigate={(next) => { setView(next); setQuery(""); }}
+        />
       </header>
       <div className="workspace">
         <main>{content()}</main>

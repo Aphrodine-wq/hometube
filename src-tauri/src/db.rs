@@ -255,6 +255,12 @@ impl Database {
             library_volume_id: values
                 .remove("library_volume_id")
                 .or(defaults.library_volume_id),
+            youtube_cookies_browser: values
+                .remove("youtube_cookies_browser")
+                .or(defaults.youtube_cookies_browser),
+            youtube_cookies_file: values
+                .remove("youtube_cookies_file")
+                .or(defaults.youtube_cookies_file),
         })
     }
 
@@ -294,6 +300,30 @@ impl Database {
             }
             None => {
                 tx.execute("DELETE FROM settings WHERE key='library_volume_id'", [])?;
+            }
+        }
+        for key in ["youtube_cookies_browser", "youtube_cookies_file"] {
+            let value = if key == "youtube_cookies_browser" {
+                settings.youtube_cookies_browser.as_deref()
+            } else {
+                settings.youtube_cookies_file.as_deref()
+            };
+            match value {
+                Some(value) => {
+                    tx.execute(
+                        &format!(
+                            "INSERT INTO settings(key, value) VALUES('{key}', ?1)
+                             ON CONFLICT(key) DO UPDATE SET value=excluded.value"
+                        ),
+                        [value],
+                    )?;
+                }
+                None => {
+                    tx.execute(
+                        &format!("DELETE FROM settings WHERE key='{key}'"),
+                        [],
+                    )?;
+                }
             }
         }
         tx.commit()?;

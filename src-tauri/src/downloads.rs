@@ -103,7 +103,12 @@ pub fn validate_youtube_url(raw: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn preview_download(yt_dlp: &str, js_runtime: &str, raw_url: &str) -> Result<DownloadPreview> {
+pub fn preview_download(
+    yt_dlp: &str,
+    js_runtime: &str,
+    raw_url: &str,
+    youtube_auth_args: &[String],
+) -> Result<DownloadPreview> {
     validate_youtube_url(raw_url)?;
     let mut command = Command::new(yt_dlp);
     command
@@ -116,6 +121,7 @@ pub fn preview_download(yt_dlp: &str, js_runtime: &str, raw_url: &str) -> Result
             "--playlist-end",
             "500",
         ])
+        .args(youtube_auth_args)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -130,7 +136,7 @@ pub fn preview_download(yt_dlp: &str, js_runtime: &str, raw_url: &str) -> Result
     parse_download_preview(&value)
 }
 
-fn run_bounded_command(mut command: Command, timeout: Duration) -> Result<Vec<u8>> {
+pub(crate) fn run_bounded_command(mut command: Command, timeout: Duration) -> Result<Vec<u8>> {
     let mut child = command
         .spawn()
         .context("The configured yt-dlp command could not be started")?;
@@ -379,6 +385,7 @@ fn run_job(app: &AppHandle, job: &mut DownloadJob) -> Result<()> {
     if let Some(runtime) = javascript_runtime(&settings.js_runtime_path) {
         command.args(["--js-runtimes", &runtime]);
     }
+    command.args(settings.youtube_auth_args());
     command.arg(&job.url);
 
     let mut child = command
@@ -818,7 +825,7 @@ fn format_selector(quality: &str) -> &'static str {
     }
 }
 
-fn javascript_runtime(command: &str) -> Option<String> {
+pub(crate) fn javascript_runtime(command: &str) -> Option<String> {
     let path = Path::new(command.trim());
     let executable = path.file_name()?.to_str()?.to_ascii_lowercase();
     let runtime = if executable.starts_with("node") {

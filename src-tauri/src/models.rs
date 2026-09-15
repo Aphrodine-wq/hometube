@@ -45,8 +45,43 @@ pub struct AppSettings {
     pub accent_preference: String,
     pub density_preference: String,
     pub text_size_preference: String,
+    #[serde(default)]
     pub reduced_motion: bool,
+    #[serde(default)]
     pub library_volume_id: Option<String>,
+    /// Optional browser whose YouTube cookies are passed to yt-dlp
+    /// (`--cookies-from-browser`). Empty when unused.
+    #[serde(default)]
+    pub youtube_cookies_browser: Option<String>,
+    /// Optional exported cookies.txt passed to yt-dlp (`--cookies`).
+    #[serde(default)]
+    pub youtube_cookies_file: Option<String>,
+}
+
+impl AppSettings {
+    /// Extra yt-dlp arguments that carry the configured YouTube session.
+    pub fn youtube_auth_args(&self) -> Vec<String> {
+        let mut args = Vec::new();
+        if let Some(browser) = self.youtube_cookies_browser.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+            args.push("--cookies-from-browser".to_owned());
+            args.push(browser.to_owned());
+        }
+        if let Some(file) = self.youtube_cookies_file.as_deref().map(str::trim).filter(|value| !value.is_empty()) {
+            args.push("--cookies".to_owned());
+            args.push(file.to_owned());
+        }
+        args
+    }
+
+    pub fn normalized(mut self) -> Self {
+        let trim_optional = |value: Option<String>| -> Option<String> {
+            value.map(|inner| inner.trim().to_owned()).filter(|inner| !inner.is_empty())
+        };
+        self.youtube_cookies_browser = trim_optional(self.youtube_cookies_browser)
+            .filter(|browser| matches!(browser.as_str(), "firefox" | "chrome" | "chromium" | "brave" | "edge" | "opera" | "safari" | "vivaldi" | "whale" | "librewolf"));
+        self.youtube_cookies_file = trim_optional(self.youtube_cookies_file);
+        self
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -238,4 +273,15 @@ pub struct RemovedItem {
     pub status: String,
     pub error: Option<String>,
     pub space_recovery_note: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct YoutubeSearchItem {
+    pub video_id: String,
+    pub url: String,
+    pub title: String,
+    pub channel: String,
+    pub duration_secs: Option<u64>,
+    pub thumbnail_url: Option<String>,
 }

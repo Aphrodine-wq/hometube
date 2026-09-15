@@ -41,6 +41,8 @@ export interface AppSettings {
   textSizePreference: TextSizePreference;
   reducedMotion: boolean;
   libraryVolumeId: string | null;
+  youtubeCookiesBrowser: string | null;
+  youtubeCookiesFile: string | null;
 }
 
 export type AccentPreference = "cinema" | "amber" | "teal" | "blue" | "violet";
@@ -155,6 +157,15 @@ export interface DownloadPreview {
   itemCount: number | null;
   durationSecs: number | null;
   sourceMaxHeight: number | null;
+}
+
+export interface YoutubeSearchItem {
+  videoId: string;
+  url: string;
+  title: string;
+  channel: string;
+  durationSecs: number | null;
+  thumbnailUrl: string | null;
 }
 
 export interface LegacyCandidate {

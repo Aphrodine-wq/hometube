@@ -51,7 +51,7 @@ export function VideoDetailsPanel({
       footer={item ? (
         <div className="details-footer">
           <button className="primary-button" onClick={() => onPlay(item)}><PlayIcon weight="fill" />{item.progressSecs > 0 ? "Resume" : "Play"}</button>
-          {item.managedByHomeTube ? <button className="danger-button" onClick={() => onRemove(item)}><TrashIcon /> Move to Trash</button> : null}
+          <button className="danger-button" onClick={() => onRemove(item)}><TrashIcon /> Move to Trash</button>
         </div>
       ) : null}
     >
